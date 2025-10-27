@@ -78,15 +78,16 @@ $ROOTFS_DIR/usr/local/bin/proot \
   --kill-on-exit /bin/bash -c '
 # ---------- Inside Ubuntu environment ----------
 
-# Stylish permanent prompt
+# Stylish permanent prompt with proper spacing
 if ! grep -q "νιѕнαL@ubuntu" /root/.bashrc; then
-  echo "export PS1=\"\[\e[1;33m\]»»—⎯νιѕнαL@ubuntu ➤ \[\e[0m\]\"" >> /root/.bashrc
+  echo "export PS1=\"\[\e[1;33m\]»»—⎯νιѕнαL@ubuntu ~ \[\e[0m\]\"" >> /root/.bashrc
 fi
 . /root/.bashrc
 
 echo ""
 echo "___________________________________________________"
 echo "           -----> Mission Completed ! <----"
+echo "___________________________________________________"
 echo ""
 echo "💡 Type: python.sh  —  to start Python 3.10 installation"
 echo ""
@@ -120,14 +121,16 @@ EOF
 
 chmod +x /root/python.sh
 
-# If already installed, auto-load
+# Make sure python.sh runs from anywhere
+ln -sf /root/python.sh /usr/local/bin/python.sh
+
+# Reload or start normally
 if [ -f /root/.python_installed ]; then
   echo ""
   echo ">>> Python 3.10 already installed. Opening environment..."
   echo ""
   export PATH=/root/python3.10/bin:$PATH
-  exec bash --rcfile /root/.bashrc
-else
-  exec bash --rcfile /root/.bashrc
 fi
+
+exec bash --rcfile /root/.bashrc
 '
