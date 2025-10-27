@@ -15,27 +15,12 @@ else
   exit 1
 fi
 
-# ----------------------------------------------------------------------
-#  If Python 3.10 already installed, skip everything & launch it
-# ----------------------------------------------------------------------
-if [ -e "$ROOTFS_DIR/.python_installed" ]; then
-  echo "Python 3.10 environment detected — launching directly..."
-  $ROOTFS_DIR/usr/local/bin/proot \
-    --rootfs="${ROOTFS_DIR}" \
-    -0 -w /root -b /dev -b /sys -b /proc -b /etc/resolv.conf \
-    /bin/bash -c ". /root/.bashrc && python3.10"
-  exit 0
-fi
-
-# ----------------------------------------------------------------------
-#  Normal installation (first run)
-# ----------------------------------------------------------------------
 if [ ! -e $ROOTFS_DIR/.installed ]; then
-  echo "#######################################################################################"
+  echo "##################################################################"
   echo "#"
-  echo "#               VISHAL ROOT AND PYTHON 3.10 OUTO INSTALL"
+  echo "#                »»—⎯⁠⁠⁠⁠‌꯭꯭νιѕнαL𝅃 » outo python 3.10 installer"
   echo "#"
-  echo "#######################################################################################"
+  echo "##################################################################"
 
   read -p "Do you want to install Ubuntu? (YES/no): " install_ubuntu
 fi
@@ -56,12 +41,11 @@ if [ ! -e $ROOTFS_DIR/.installed ]; then
   wget --tries=$max_retries --timeout=$timeout --no-hsts -O $ROOTFS_DIR/usr/local/bin/proot "https://raw.githubusercontent.com/foxytouxxx/freeroot/main/proot-${ARCH}"
 
   while [ ! -s "$ROOTFS_DIR/usr/local/bin/proot" ]; do
-    rm -f $ROOTFS_DIR/usr/local/bin/proot
+    rm -rf $ROOTFS_DIR/usr/local/bin/proot
     wget --tries=$max_retries --timeout=$timeout --no-hsts -O $ROOTFS_DIR/usr/local/bin/proot "https://raw.githubusercontent.com/foxytouxxx/freeroot/main/proot-${ARCH}"
     chmod 755 $ROOTFS_DIR/usr/local/bin/proot
     sleep 1
   done
-
   chmod 755 $ROOTFS_DIR/usr/local/bin/proot
 fi
 
@@ -84,42 +68,43 @@ display_gg() {
 clear
 display_gg
 
-echo ""
-echo ">>> Running apt update & sudo installation inside Ubuntu..."
+# Start proot environment and run setup if first time
 $ROOTFS_DIR/usr/local/bin/proot \
   --rootfs="${ROOTFS_DIR}" \
-  -0 -w /root -b /dev -b /sys -b /proc -b /etc/resolv.conf \
-  /bin/bash -c "apt update -y && apt install sudo -y"
+  -0 -w "/root" -b /dev -b /sys -b /proc -b /etc/resolv.conf --kill-on-exit /bin/bash -c '
+if [ ! -f /root/.python_installed ]; then
+  echo "Updating system..."
+  apt update && apt install -y sudo
 
-echo ""
-echo ">>> Installing Python 3.10 (first time setup)..."
-$ROOTFS_DIR/usr/local/bin/proot \
-  --rootfs="${ROOTFS_DIR}" \
-  -0 -w /root -b /dev -b /sys -b /proc -b /etc/resolv.conf \
-  /bin/bash -c "
-    apt install -y build-essential curl libssl-dev zlib1g-dev libncurses5-dev \
-      libbz2-dev libreadline-dev libsqlite3-dev wget llvm libncursesw5-dev \
-      xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev &&
-    cd /tmp &&
-    curl -O https://www.python.org/ftp/python/3.10.13/Python-3.10.13.tgz &&
-    tar -xf Python-3.10.13.tgz &&
-    cd Python-3.10.13 &&
-    ./configure --prefix=/root/python3.10 --enable-optimizations &&
-    make -j$(nproc) &&
-    make install &&
-    echo 'export PATH=/root/python3.10/bin:\$PATH' >> /root/.bashrc &&
-    . /root/.bashrc
-  "
+  echo "Installing Python 3.10 dependencies..."
+  apt install -y build-essential curl libssl-dev zlib1g-dev libncurses5-dev libbz2-dev \
+  libreadline-dev libsqlite3-dev wget llvm libncursesw5-dev xz-utils tk-dev libxml2-dev \
+  libxmlsec1-dev libffi-dev liblzma-dev
 
-# Mark that Python setup completed
-touch "$ROOTFS_DIR/.python_installed"
+  echo "Downloading Python 3.10..."
+  cd /tmp && curl -O https://www.python.org/ftp/python/3.10.13/Python-3.10.13.tgz
+  tar -xf Python-3.10.13.tgz
+  cd Python-3.10.13
 
-echo ""
-echo ">>> Python 3.10 installation complete!"
-echo ""
+  echo "Compiling Python 3.10..."
+  ./configure --prefix=/root/python3.10 --enable-optimizations
+  make -j$(nproc)
+  make install
 
-# Launch Python directly
-$ROOTFS_DIR/usr/local/bin/proot \
-  --rootfs="${ROOTFS_DIR}" \
-  -0 -w /root -b /dev -b /sys -b /proc -b /etc/resolv.conf \
-  /bin/bash -c ". /root/.bashrc && python3.10"
+  echo "export PATH=/root/python3.10/bin:\$PATH" >> /root/.bashrc
+  echo "PS1=\"\[\e[1;33m\]»»—⎯⁠⁠⁠⁠‌꯭꯭νιѕнαL@ubuntu ➤ \[\e[0m\]\"" >> /root/.bashrc
+  . /root/.bashrc
+
+  touch /root/.python_installed
+  echo ""
+  echo ">>> Python 3.10 installation complete!"
+  echo ""
+  exec bash
+else
+  echo ""
+  echo ">>> Python 3.10 already installed. Opening environment..."
+  echo ""
+  . /root/.bashrc
+  exec bash
+fi
+'
